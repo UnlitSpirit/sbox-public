@@ -97,7 +97,7 @@ public partial class SceneEditorSession
 
 internal sealed class SceneUndoSnapshot : IDisposable
 {
-	sealed record ScopeSnapshot( JsonObject Scene, SelectionSnapshot Selection, ComponentSnapshot ComponentSnapshot, GameObjectSnapshot GameObjectSnapshot )
+	sealed record ScopeSnapshot( JsonObject Scene, byte[] SceneBinaryData, SelectionSnapshot Selection, ComponentSnapshot ComponentSnapshot, GameObjectSnapshot GameObjectSnapshot )
 	{
 		public bool Equals( ScopeSnapshot other )
 		{
@@ -204,16 +204,25 @@ internal sealed class SceneUndoSnapshot : IDisposable
 		public readonly JsonNode[] State;
 		public readonly ComponentReference[] ComponentRefs;
 
+		// Binary blobs (eg. terrain heightmaps) referenced by State. Without capturing and
+		// replaying these, blob-backed properties round-trip to empty and the data is lost.
+		public readonly byte[] BinaryData;
+
 		public ComponentSnapshot( IEnumerable<Component> components )
 		{
 			ComponentRefs = components.Select( ComponentReference.FromInstance ).ToArray();
 
 			var serializeOptions = new GameObject.SerializeOptions { };
+
+			using var blobs = BlobDataSerializer.Capture();
 			State = components.Select( comp => comp.Serialize( serializeOptions ) ).ToArray();
+			BinaryData = blobs.ToByteArray();
 		}
 
 		public void Restore( Scene scene )
 		{
+			using var blobs = BlobDataSerializer.LoadFromMemory( BinaryData );
+
 			for ( int i = 0; i < State.Length; i++ )
 			{
 				Component comp = null;
@@ -265,6 +274,10 @@ internal sealed class SceneUndoSnapshot : IDisposable
 		public readonly List<GameObjectReference> GameObjectNextSiblingRefs;
 		public readonly List<GameObjectReference> GameObjectParentRefs;
 
+		// Binary blobs (eg. terrain heightmaps) referenced by State. Without capturing and
+		// replaying these, blob-backed properties round-trip to empty and the data is lost.
+		public readonly byte[] BinaryData;
+
 		public GameObjectSnapshot( Dictionary<GameObject, GameObjectUndoFlags> gameObjects )
 		{
 			var goCount = gameObjects.Count;
@@ -272,6 +285,8 @@ internal sealed class SceneUndoSnapshot : IDisposable
 			State = new( goCount );
 			GameObjectNextSiblingRefs = new( goCount );
 			GameObjectParentRefs = new( goCount );
+
+			using var blobs = BlobDataSerializer.Capture();
 
 			foreach ( var (go, flags) in gameObjects )
 			{
@@ -287,6 +302,8 @@ internal sealed class SceneUndoSnapshot : IDisposable
 				GameObjectNextSiblingRefs.Add( go.GetNextSibling( false ).IsValid() ? GameObjectReference.FromInstance( go.GetNextSibling( false ) ) : GameObjectReference.FromId( Guid.Empty ) );
 				GameObjectParentRefs.Add( go.Parent.IsValid() ? GameObjectReference.FromInstance( go.Parent ) : GameObjectReference.FromId( Guid.Empty ) );
 			}
+
+			BinaryData = blobs.ToByteArray();
 		}
 
 		public void Restore( Scene scene, HashSet<GameObjectReference> createdGos = null )
@@ -314,6 +331,8 @@ internal sealed class SceneUndoSnapshot : IDisposable
 
 		public void PostRestore( Scene scene )
 		{
+			using var blobs = BlobDataSerializer.LoadFromMemory( BinaryData );
+
 			// second pass fully desiarizes and restores hierachy
 			for ( int i = 0; i < State.Count; i++ )
 			{
@@ -497,10 +516,13 @@ internal sealed class SceneUndoSnapshot : IDisposable
 		// Undo snapshots
 
 		JsonObject scene = null;
+		byte[] sceneBinaryData = null;
 		// if deletion is requested, we need to capture the whole scene
 		if ( _captureDestructions )
 		{
+			using var blobs = BlobDataSerializer.Capture();
 			scene = _session.Scene.Serialize();
+			sceneBinaryData = blobs.ToByteArray();
 		}
 
 		SelectionSnapshot selection = null;
@@ -523,7 +545,7 @@ internal sealed class SceneUndoSnapshot : IDisposable
 			gameObjectSnapshot = new GameObjectSnapshot( _initalCapturedGameObjects );
 		}
 
-		_initialState = new ScopeSnapshot( scene, selection, componentSnapshot, gameObjectSnapshot );
+		_initialState = new ScopeSnapshot( scene, sceneBinaryData, selection, componentSnapshot, gameObjectSnapshot );
 
 		if ( _captureGameObjectCreations )
 		{
@@ -685,7 +707,7 @@ internal sealed class SceneUndoSnapshot : IDisposable
 			gameObjectSnapshot = new GameObjectSnapshot( disposeWatchedGameObjects );
 		}
 
-		var disposeState = new ScopeSnapshot( null, selection, componentSnapshot, gameObjectSnapshot );
+		var disposeState = new ScopeSnapshot( null, null, selection, componentSnapshot, gameObjectSnapshot );
 
 		var destroyedGameObjectRefs = _destroyedGameObjects.Select( x => x.Value ).ToArray();
 		var destroyedComponentRefs = _destroyedComponents.Select( x => x.Value ).ToArray();
@@ -718,6 +740,7 @@ internal sealed class SceneUndoSnapshot : IDisposable
 					_session.Scene.Clear();
 
 					using ( CallbackBatch.Isolated() )
+					using ( BlobDataSerializer.LoadFromMemory( preChangeStateCopy.SceneBinaryData ) )
 					{
 						_session.Scene.Deserialize( preChangeStateCopy.Scene );
 					}
