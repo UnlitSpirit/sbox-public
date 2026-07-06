@@ -4,11 +4,13 @@ namespace RopEditor;
 
 internal static class RopModelMenu
 {
-	[Event( "folder.contextmenu", Priority = 60 )]
+	[Event( "folder.contextmenu", Priority = -100 )]
 	public static void OnFolderContextMenu( FolderContextMenu e )
 	{
-		if ( e.ThisFolder || !RopModelBuilder.CanBuild( e.Target ) )
+		if ( !RopModelBuilder.CanBuild( e.Target ) )
 			return;
+
+		e.Menu.AddSeparator();
 
 		e.Menu.AddOption( "Create RoP Model", "view_in_ar", () =>
 		{

@@ -8,8 +8,9 @@ using Editor;
 
 namespace RopEditor;
 
-// One-click model assembly for a folder that already holds a models/ mesh and a textures/ set:
-// bakes a rop_psx material from the color texture, then writes a centimeter-scaled vmdl with hull collision.
+// One-click model assembly for a folder holding a mesh and its textures, loose or already sorted:
+// sweeps loose meshes into models/ and images into textures/, bakes a rop_psx material from the color
+// texture, then writes a centimeter-scaled vmdl with hull collision.
 public static class RopModelBuilder
 {
 	const string DocHeader = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:modeldoc30:version{8c2d7a91-9c42-4bf0-883a-5a3b1762d4f1} -->";
@@ -30,20 +31,22 @@ public static class RopModelBuilder
 
 	public static bool CanBuild( DirectoryInfo folder )
 	{
-		return folder is not null && folder.Exists && FindMesh( folder ) is not null && TexturesDir( folder ) is not null;
+		return folder is not null && folder.Exists && FindMesh( folder ) is not null && HasTexture( folder );
 	}
 
 	public static string Build( DirectoryInfo folder )
 	{
+		OrganizeLooseFiles( folder );
+
 		var mesh = FindMesh( folder );
 
 		if ( mesh is null )
-			return "No mesh found under models/.";
+			return "No mesh found (looked in models/ and loose in the folder).";
 
 		var textures = TexturesDir( folder );
 
 		if ( textures is null )
-			return "No textures/ folder found.";
+			return "No textures found (looked in textures/ and loose in the folder).";
 
 		var name = folder.Name;
 
@@ -125,8 +128,10 @@ public static class RopModelBuilder
 		text.Append( "// THIS FILE IS AUTO-GENERATED\n\n" );
 		text.Append( "Layer0\n{\n" );
 		text.Append( $"\tshader \"{Shader}\"\n\n" );
+		text.Append( "\t//---- PSX ----\n\tF_PSX_SPECULAR 1\n\n" );
 		text.Append( "\t//---- Fog ----\n\tg_bFogEnabled \"1\"\n\n" );
 		text.Append( "\t//---- Material ----\n" );
+		text.Append( "\tg_flMetalnessScale \"0.500\"\n" );
 		text.Append( "\tg_flTintColor \"[1.000000 1.000000 1.000000 0.000000]\"\n" );
 		text.Append( $"\tTextureAmbientOcclusion \"{slots["TextureAmbientOcclusion"]}\"\n" );
 		text.Append( $"\tTextureColor \"{slots["TextureColor"]}\"\n" );
@@ -246,18 +251,65 @@ public static class RopModelBuilder
 		text.AppendLine( "\t\t\t}," );
 	}
 
+	static void OrganizeLooseFiles( DirectoryInfo folder )
+	{
+		SweepInto( folder, "models", MeshFilesIn( folder ) );
+		SweepInto( folder, "textures", ImageFilesIn( folder ) );
+	}
+
+	static void SweepInto( DirectoryInfo folder, string subDirectory, IEnumerable<FileInfo> files )
+	{
+		var loose = files.ToList();
+
+		if ( loose.Count == 0 )
+			return;
+
+		var destination = Join( Normalize( folder.FullName ), subDirectory );
+
+		Directory.CreateDirectory( destination );
+
+		foreach ( var file in loose )
+		{
+			var target = Join( destination, file.Name );
+
+			if ( !File.Exists( target ) )
+				file.MoveTo( target );
+		}
+	}
+
 	static FileInfo FindMesh( DirectoryInfo folder )
 	{
 		var models = folder.EnumerateDirectories( "models", SearchOption.TopDirectoryOnly ).FirstOrDefault();
 
-		if ( models is null )
-			return null;
-
-		return models
-			.EnumerateFiles( "*.*", SearchOption.TopDirectoryOnly )
-			.Where( file => MeshExtensions.Contains( file.Extension.ToLowerInvariant() ) )
+		return MeshFilesIn( models )
+			.Concat( MeshFilesIn( folder ) )
 			.OrderBy( file => MeshRank( file.Extension ) )
 			.FirstOrDefault();
+	}
+
+	static bool HasTexture( DirectoryInfo folder )
+	{
+		return ImageFilesIn( TexturesDir( folder ) ).Any() || ImageFilesIn( folder ).Any();
+	}
+
+	static IEnumerable<FileInfo> MeshFilesIn( DirectoryInfo directory )
+	{
+		if ( directory is null || !directory.Exists )
+			return Enumerable.Empty<FileInfo>();
+
+		return directory
+			.EnumerateFiles( "*.*", SearchOption.TopDirectoryOnly )
+			.Where( file => MeshExtensions.Contains( file.Extension.ToLowerInvariant() ) );
+	}
+
+	static IEnumerable<FileInfo> ImageFilesIn( DirectoryInfo directory )
+	{
+		if ( directory is null || !directory.Exists )
+			return Enumerable.Empty<FileInfo>();
+
+		return directory
+			.EnumerateFiles( "*.*", SearchOption.TopDirectoryOnly )
+			.Where( file => IsImage( file.Extension ) );
 	}
 
 	static DirectoryInfo TexturesDir( DirectoryInfo folder )

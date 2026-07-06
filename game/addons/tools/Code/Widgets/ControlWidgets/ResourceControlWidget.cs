@@ -166,12 +166,50 @@ public class ResourceControlWidget : ControlWidget
 		e.Accepted = true;
 	}
 
+	bool NavigatesOnClick => GetAncestor<ComponentSheet>() is not null;
+
 	protected override void OnMouseClick( MouseEvent e )
 	{
 		base.OnMouseClick( e );
 
 		if ( ReadOnly ) return;
 
+		var resource = SerializedProperty.GetValue<Resource>( null );
+		var asset = resource != null ? AssetSystem.FindByPath( resource.ResourcePath ) : null;
+
+		if ( NavigatesOnClick && asset is not null )
+		{
+			LocalAssetBrowser.OpenTo( asset, true );
+			e.Accepted = true;
+			return;
+		}
+
+		OpenPicker();
+	}
+
+	protected override void OnDoubleClick( MouseEvent e )
+	{
+		if ( !e.LeftMouseButton )
+		{
+			base.OnDoubleClick( e );
+			return;
+		}
+
+		e.Accepted = true;
+
+		if ( ReadOnly ) return;
+
+		var resource = SerializedProperty.GetValue<Resource>( null );
+		var asset = resource != null ? AssetSystem.FindByPath( resource.ResourcePath ) : null;
+
+		// outside component sheets (and on empty slots) the first click of this pair already opened the picker
+		if ( !NavigatesOnClick || asset is null ) return;
+
+		OpenPicker();
+	}
+
+	void OpenPicker()
+	{
 		var resource = SerializedProperty.GetValue<Resource>( null );
 		var asset = resource != null ? AssetSystem.FindByPath( resource.ResourcePath ) : null;
 
@@ -193,6 +231,22 @@ public class ResourceControlWidget : ControlWidget
 		picker.Show();
 
 		picker.SetSelection( asset );
+
+		RefocusAfterTrailingClick( picker );
+	}
+
+	// the trailing mouse release of a double click re-activates the main editor window over the picker
+	static async void RefocusAfterTrailingClick( AssetPicker picker )
+	{
+		await Task.Delay( 150 );
+
+		if ( !picker.IsValid() ) return;
+		if ( picker.IsActiveWindow ) return;
+
+		var search = picker.GetDescendants<LineEdit>().FirstOrDefault();
+
+		if ( search.IsValid() ) search.Focus();
+		else picker.Focus();
 	}
 
 	private void UpdateFromAsset( Asset asset )
