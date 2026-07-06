@@ -5,7 +5,7 @@ namespace Editor.MeshEditor;
 /// Select and edit vertices.
 /// </summary>
 [Title( "Vertex Tool" )]
-[Icon( "workspaces" )]
+[Icon( "meshtools/sub-tools/vertex_tool.png" )]
 [Alias( "tools.vertex-tool" )]
 [Group( "1" )]
 public sealed partial class VertexTool( MeshTool tool ) : SelectionTool<MeshVertex>( tool )

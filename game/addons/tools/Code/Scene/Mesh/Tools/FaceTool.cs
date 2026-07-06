@@ -7,7 +7,7 @@ namespace Editor.MeshEditor;
 /// Select and edit face geometry.
 /// </summary>
 [Title( "Face Tool" )]
-[Icon( "change_history" )]
+[Icon( "meshtools/sub-tools/face_tool.png" )]
 [Alias( "tools.face-tool" )]
 [Group( "3" )]
 public sealed partial class FaceTool( MeshTool tool ) : SelectionTool<MeshFace>( tool )
