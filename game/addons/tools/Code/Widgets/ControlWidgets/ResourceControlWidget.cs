@@ -166,7 +166,8 @@ public class ResourceControlWidget : ControlWidget
 		e.Accepted = true;
 	}
 
-	bool NavigatesOnClick => GetAncestor<ComponentSheet>() is not null;
+	// Game-resource slots always open the picker on click (easy swap); other asset slots navigate on single click, pick on double.
+	bool NavigatesOnClick => GetAncestor<ComponentSheet>() is not null && !(AssetType?.IsGameResource ?? false);
 
 	protected override void OnMouseClick( MouseEvent e )
 	{
@@ -230,7 +231,11 @@ public class ResourceControlWidget : ControlWidget
 		};
 		picker.Show();
 
-		picker.SetSelection( asset );
+		// Game resources open at the root flat type-filtered list — you clicked to change it, not to see its folder.
+		if ( AssetType?.IsGameResource ?? false )
+			picker.SetSelection( (Asset)null );
+		else
+			picker.SetSelection( asset );
 
 		RefocusAfterTrailingClick( picker );
 	}

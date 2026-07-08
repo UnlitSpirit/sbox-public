@@ -206,7 +206,6 @@ public partial class AssetBrowser : Widget, IBrowser, AssetSystem.IEventListener
 		{
 			Search.AssetTypes.ActiveTags = FilterAssetTypes.SelectMany( x => x.FileExtensions ).ToHashSet();
 			Search.AssetTypes.Rebuild();
-			Search.AssetTypes.Enabled = false;
 		}
 
 		watcher = new FileSystemWatcher();
@@ -217,6 +216,10 @@ public partial class AssetBrowser : Widget, IBrowser, AssetSystem.IEventListener
 
 		SetInitialLocation();
 		RefreshCookies();
+
+		// A picker opens flat on just the matching resources, not the folder tree.
+		if ( FilterAssetTypes is not null )
+			ShowRecursiveFiles = true;
 
 		if ( History.Count == 0 && CurrentLocation != null )
 		{
