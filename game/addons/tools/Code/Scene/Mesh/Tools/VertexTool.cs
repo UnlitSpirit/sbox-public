@@ -24,9 +24,9 @@ public sealed partial class VertexTool( MeshTool tool ) : SelectionTool<MeshVert
 		menu.AddSeparator();
 
 		var ops = menu.AddMenu( "Vertex Operations", "build" );
-		AddMenuOption( ops, "Merge Verts", "merge", "mesh.merge", count > 1 );
-		AddMenuOption( ops, "Connect Verts", "link", "mesh.connect", count > 1 );
-		AddMenuOption( ops, "Bevel Verts", "straighten", "mesh.bevel", true );
+		AddMenuOption( ops, "Merge Verts", "meshtools/vertex_tools/merge.png", "mesh.merge", count > 1 );
+		AddMenuOption( ops, "Connect Verts", "meshtools/vertex_tools/connect.png", "mesh.connect", count > 1 );
+		AddMenuOption( ops, "Bevel Verts", "meshtools/vertex_tools/bevel.png", "mesh.bevel", true );
 
 		var sel = menu.AddMenu( "Vertex Selection", "select_all" );
 		AddMenuOption( sel, "Select Loop", "all_out", "mesh.select-loop", count > 1 );
