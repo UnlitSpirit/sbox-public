@@ -206,6 +206,7 @@ public partial class AssetBrowser : Widget, IBrowser, AssetSystem.IEventListener
 		{
 			Search.AssetTypes.ActiveTags = FilterAssetTypes.SelectMany( x => x.FileExtensions ).ToHashSet();
 			Search.AssetTypes.Rebuild();
+			Search.AssetTypes.Enabled = false;
 		}
 
 		watcher = new FileSystemWatcher();
@@ -216,10 +217,6 @@ public partial class AssetBrowser : Widget, IBrowser, AssetSystem.IEventListener
 
 		SetInitialLocation();
 		RefreshCookies();
-
-		// A picker opens flat on just the matching resources, not the folder tree.
-		if ( FilterAssetTypes is not null )
-			ShowRecursiveFiles = true;
 
 		if ( History.Count == 0 && CurrentLocation != null )
 		{
@@ -617,30 +614,6 @@ public partial class AssetBrowser : Widget, IBrowser, AssetSystem.IEventListener
 				UpdateAssetList();
 			};
 			menu.AddOption( o );
-		}
-
-		menu.AddSeparator();
-
-		{
-			var o = menu.AddOption( new Option( this, "Split Left", "first_page" ) );
-			o.Triggered = () =>
-			{
-				var ab = EditorWindow.DockManager.Create<MainAssetBrowser>();
-				ab.Local.NavigateTo( CurrentLocation );
-				ab.Local.ViewModeType = ViewModeType;
-				EditorWindow.DockManager.AddDock( this, ab, DockArea.Left );
-			};
-		}
-
-		{
-			var o = menu.AddOption( new Option( this, "Split Right", "last_page" ) );
-			o.Triggered = () =>
-			{
-				var ab = EditorWindow.DockManager.Create<MainAssetBrowser>();
-				ab.Local.NavigateTo( CurrentLocation );
-				ab.Local.ViewModeType = ViewModeType;
-				EditorWindow.DockManager.AddDock( this, ab, DockArea.Right );
-			};
 		}
 
 		menu.OpenAt( source.BottomLeft, false );

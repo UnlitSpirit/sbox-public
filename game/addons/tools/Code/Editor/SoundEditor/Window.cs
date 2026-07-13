@@ -6,7 +6,6 @@ public class Window : DockWindow, IAssetEditor, AssetSystem.IEventListener
 {
 	public bool CanOpenMultipleAssets => true;
 
-	private string DefaultDockState;
 	private Preview Preview;
 	private Timeline Timeline;
 	private Properties Properties;
@@ -87,24 +86,16 @@ public class Window : DockWindow, IAssetEditor, AssetSystem.IEventListener
 
 		BuildMenuBar();
 
-		DockManager.RegisterDockType( "Preview", "photo", null, false );
 		Preview = new Preview( this );
-		DockManager.AddDock( null, Preview, DockArea.Left, DockManager.DockProperty.HideOnClose );
-
-		DockManager.RegisterDockType( "Properties", "edit", null, false );
 		Properties = new Properties( this );
 		Properties.SetAsset( Asset );
-		DockManager.AddDock( null, Properties, DockArea.Left, DockManager.DockProperty.HideOnClose, 0.0f );
-
-		DockManager.RegisterDockType( "Timeline", "timeline", null, false );
 		Timeline = new Timeline( this );
 		Timeline.SetSamples( Samples, Duration, Sound );
 		Timeline.SetAsset( Asset );
-		DockManager.AddDock( null, Timeline, DockArea.BottomOuter, DockManager.DockProperty.HideOnClose, 0.3f );
 
-		DockManager.Update();
-
-		DefaultDockState = DockManager.State;
+		DockManager.AddDock( new DockManager.DockInfo { Title = "Preview", Icon = "photo", Area = DockArea.Center, CreateAction = () => Preview } );
+		DockManager.AddDock( new DockManager.DockInfo { Title = "Properties", Icon = "edit", Area = DockArea.Right, CreateAction = () => Properties } );
+		DockManager.AddDock( new DockManager.DockInfo { Title = "Timeline", Icon = "timeline", Area = DockArea.Bottom, CreateAction = () => Timeline } );
 
 		if ( StateCookie != "SoundEditor" )
 		{
@@ -116,22 +107,11 @@ public class Window : DockWindow, IAssetEditor, AssetSystem.IEventListener
 		}
 	}
 
-	protected override void RestoreDefaultDockLayout()
-	{
-		DockManager.State = DefaultDockState;
-
-		SaveToStateCookie();
-	}
-
 	[EditorEvent.Hotload]
 	public void OnHotload()
 	{
-		SaveToStateCookie();
-
-		DockManager.Clear();
 		MenuBar.Clear();
-
-		CreateUI();
+		BuildMenuBar();
 	}
 
 	private void Save()
