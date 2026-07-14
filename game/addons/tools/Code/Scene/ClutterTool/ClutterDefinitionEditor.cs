@@ -125,10 +125,10 @@ public class ClutterDefinitionEditor : BaseResourceEditor<ClutterDefinition>
 		if ( so is null )
 			return;
 
-		so.OnPropertyChanged += ( prop ) => NoteChanged( prop );
-
+		so.OnPropertyChanged += NoteChanged;
 		var sheet = new ControlSheet();
 		sheet.AddObject( so );
+		sheet.Margin = 0;
 		_scattererProperties.Add( sheet );
 	}
 

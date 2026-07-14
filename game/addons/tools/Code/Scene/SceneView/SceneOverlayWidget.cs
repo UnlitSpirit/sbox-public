@@ -11,7 +11,8 @@ public class SceneOverlayWidget : Widget
 		TranslucentBackground = true;
 		NoSystemBackground = true;
 
-		WindowFlags = WindowFlags.FramelessWindowHint | WindowFlags.Tool | WindowFlags.WindowStaysOnTopHint;
+		WindowFlags = WindowFlags.FramelessWindowHint | WindowFlags.Tool;
+		SetTransientParent( EditorWindow );
 
 		Active = this;
 

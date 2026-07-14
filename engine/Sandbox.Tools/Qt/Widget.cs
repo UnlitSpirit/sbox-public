@@ -1210,6 +1210,14 @@ namespace Editor
 			return QObject.FindOrCreate( _widget.window() ) as Widget;
 		}
 
+		/// <summary>
+		/// Keeps this window above its owner without making it globally topmost.
+		/// </summary>
+		public void SetTransientParent( Widget parent )
+		{
+			ArgumentNullException.ThrowIfNull( parent );
+			_widget.setTransientParent( parent._widget );
+		}
 	}
 
 

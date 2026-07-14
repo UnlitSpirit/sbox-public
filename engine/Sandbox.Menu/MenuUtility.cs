@@ -154,6 +154,17 @@ public static partial class MenuUtility
 	}
 
 	/// <summary>
+	/// Invite a friend to the current game.
+	/// </summary>
+	public static bool InviteFriendGame( Friend friend )
+	{
+		var connectString = new Friend( Game.SteamId ).GetRichPresence( "connect" );
+		if ( string.IsNullOrWhiteSpace( connectString ) ) return false;
+
+		return friend.InviteToGame( connectString );
+	}
+
+	/// <summary>
 	/// We might be running the game from sbox.game, so we want the menu system to open the game immediately
 	/// </summary>
 	public static string StartupGameIdent => Utility.CommandLine.GetSwitch( "-rungame", null );
