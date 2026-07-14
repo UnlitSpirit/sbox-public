@@ -25,6 +25,7 @@ public class Window : DockWindow, IAssetEditor, AssetSystem.IEventListener
 		CreateToolBar();
 		CreateUI();
 		Show();
+		StateCookie = "SoundEditor";
 	}
 
 	public void AssetOpen( Asset asset )
@@ -93,18 +94,19 @@ public class Window : DockWindow, IAssetEditor, AssetSystem.IEventListener
 		Timeline.SetSamples( Samples, Duration, Sound );
 		Timeline.SetAsset( Asset );
 
-		DockManager.AddDock( new DockManager.DockInfo { Title = "Preview", Icon = "photo", Area = DockArea.Center, CreateAction = () => Preview } );
-		DockManager.AddDock( new DockManager.DockInfo { Title = "Properties", Icon = "edit", Area = DockArea.Right, CreateAction = () => Properties } );
-		DockManager.AddDock( new DockManager.DockInfo { Title = "Timeline", Icon = "timeline", Area = DockArea.Bottom, CreateAction = () => Timeline } );
+		DockManager.AddDock( "Preview", "photo", Preview, DockArea.Center );
+		DockManager.AddDock( "Properties", "edit", Properties, DockArea.Right );
+		DockManager.AddDock( "Timeline", "timeline", Timeline, DockArea.Bottom );
+	}
 
-		if ( StateCookie != "SoundEditor" )
-		{
-			StateCookie = "SoundEditor";
-		}
-		else
-		{
-			RestoreFromStateCookie();
-		}
+	protected override void CreateDefaultDockLayout()
+	{
+		var preview = DockManager.OpenDock( "Preview", DockArea.Center );
+		DockManager.OpenDock( "Properties", DockArea.Right );
+		DockManager.SetSplitterProportions( preview, 0.72f, 0.28f );
+
+		var timeline = DockManager.OpenDock( "Timeline", DockArea.Bottom, preview );
+		DockManager.SetSplitterProportions( timeline, 0.72f, 0.28f );
 	}
 
 	[EditorEvent.Hotload]

@@ -278,7 +278,7 @@ public partial class MainWindow : DockWindow, EditorEvent.ISceneView, IActionGra
 		style.Toggled += b => ActionGraphView.EnableGridAlignedWires = b;
 	}
 
-	protected override void RestoreDefaultDockLayout()
+	protected override void CreateDefaultDockLayout()
 	{
 		var openViews = Views
 			.Select( x => x.ActionGraph )
@@ -298,6 +298,15 @@ public partial class MainWindow : DockWindow, EditorEvent.ISceneView, IActionGra
 			var dock = DockManager.OpenDock( view.Name, viewArea is null ? DockArea.Right : DockArea.Center, viewArea );
 			viewArea ??= dock;
 		}
+
+		DockManager.SetSplitterProportions( inspector, 0.75f, 0.25f );
+		if ( viewArea is not null )
+			DockManager.SetSplitterProportions( viewArea, 0.25f, 0.75f );
+	}
+
+	protected override void RestoreDefaultDockLayout()
+	{
+		CreateDefaultDockLayout();
 	}
 
 	[Shortcut( "editor.quit", "CTRL+Q", ShortcutType.Window )]

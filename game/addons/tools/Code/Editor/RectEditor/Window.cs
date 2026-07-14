@@ -11,6 +11,22 @@ public class HotspotEditorWindow : Window
 	{
 		WindowTitle = "Hotspot Editor";
 	}
+
+	public override void Show()
+	{
+		base.Show();
+		StateCookie = Name;
+	}
+
+	protected override void CreateDefaultDockLayout()
+	{
+		var properties = DockManager.OpenDock( "Properties", DockArea.Left );
+		var rectView = DockManager.OpenDock( "Rect View", DockArea.Right );
+		var materialReference = DockManager.OpenDock( "Material Reference", DockArea.Bottom, properties );
+
+		DockManager.SetSplitterProportions( materialReference, 0.70f, 0.30f );
+		DockManager.SetSplitterProportions( rectView, 0.30f, 0.70f );
+	}
 }
 
 public partial class Window : DockWindow, IAssetEditor
@@ -251,14 +267,8 @@ public partial class Window : DockWindow, IAssetEditor
 			MaterialReference.Select( previousMat );
 		}
 
-		if ( StateCookie != Name )
-		{
-			StateCookie = Name;
-		}
-		else
-		{
+		if ( Visible )
 			RestoreFromStateCookie();
-		}
 	}
 
 	protected void OnDocumentModified()

@@ -12,6 +12,9 @@ public class SceneRenderingWidget : Frame
 
 	internal SwapChainHandle_t SwapChain;
 
+	// A released swapchain is destroyed at frame end and owns our window until then
+	private bool _destroyPending;
+
 	/// <summary>
 	/// The active scene that we're rendering
 	/// </summary>
@@ -174,7 +177,12 @@ public class SceneRenderingWidget : Frame
 		// The swapchain might still be in use by native, so defer its destruction until the end of the frame.
 		// Otherwise, a race condition could occur where render targets are accessed after destruction, causing a delayed crash.
 		var swapChain = SwapChain;
-		EngineLoop.DisposeAtFrameEnd( new Sandbox.Utility.DisposeAction( () => g_pRenderDevice.DestroySwapChain( swapChain ) ) );
+		_destroyPending = true;
+		EngineLoop.DisposeAtFrameEnd( new Sandbox.Utility.DisposeAction( () =>
+		{
+			g_pRenderDevice.DestroySwapChain( swapChain );
+			_destroyPending = false;
+		} ) );
 		SwapChain = default;
 	}
 
@@ -185,6 +193,10 @@ public class SceneRenderingWidget : Frame
 
 		if ( SwapChain == default )
 		{
+			// The retired swapchain still owns our window until it's destroyed at
+			// frame end - creating a second one against it would fail, wait a frame.
+			if ( _destroyPending ) return;
+
 			SwapChain = WidgetUtil.CreateSwapChain( _widget, RenderSettings.Instance.AntiAliasQuality.ToEngine() );
 		}
 
@@ -268,15 +280,10 @@ public class SceneRenderingWidget : Frame
 
 	internal void HandleVideoChanged()
 	{
-		var msaaAmount = RenderSettings.Instance.AntiAliasQuality.ToEngine();
+		// No swapchain right now - Render will create one with the current settings
+		if ( SwapChain == default ) return;
 
-		if ( SwapChain == default )
-		{
-			SwapChain = WidgetUtil.CreateSwapChain( _widget, msaaAmount );
-			return;
-		}
-
-		WidgetUtil.UpdateSwapChainMSAA( SwapChain, msaaAmount );
+		WidgetUtil.UpdateSwapChainMSAA( SwapChain, RenderSettings.Instance.AntiAliasQuality.ToEngine() );
 	}
 
 	internal static void RenderAll()

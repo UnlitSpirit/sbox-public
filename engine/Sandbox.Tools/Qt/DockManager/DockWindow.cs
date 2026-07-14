@@ -27,6 +27,13 @@ public partial class DockWindow : Window
 	string _defaultDockState;
 
 	/// <summary>
+	/// Override to create this window's default dock layout.
+	/// </summary>
+	protected virtual void CreateDefaultDockLayout()
+	{
+	}
+
+	/// <summary>
 	/// Override to apply a default layout to your window. The layout that exists when the
 	/// state cookie is first restored is captured automatically, so the default implementation
 	/// restores that snapshot.
@@ -46,8 +53,11 @@ public partial class DockWindow : Window
 
 		base.RestoreFromStateCookie();
 
-		// capture the freshly built layout as the default before we restore over it
-		_defaultDockState ??= DockManager.State;
+		if ( _defaultDockState is null )
+		{
+			CreateDefaultDockLayout();
+			_defaultDockState = DockManager.State;
+		}
 
 		var state = ProjectCookie.GetString( $"Window.{StateCookie}.Dock", null );
 		if ( string.IsNullOrWhiteSpace( state ) || !DockManager.RestoreState( state ) )
