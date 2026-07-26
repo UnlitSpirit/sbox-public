@@ -47,4 +47,18 @@ internal static class LogBuffer
 			return events.ToArray();
 		}
 	}
+
+	/// <summary>
+	/// Drop every buffered event, returning how many were cleared.
+	/// </summary>
+	public static int Clear()
+	{
+		lock ( sync )
+		{
+			var count = events.Count;
+			events.Clear();
+
+			return count;
+		}
+	}
 }

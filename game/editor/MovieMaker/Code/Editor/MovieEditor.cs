@@ -198,7 +198,9 @@ public partial class MovieEditor : Widget, IHotloadManaged
 		Session.IsPlaying = !Session.IsPlaying;
 	}
 
-	[Shortcut( "timeline.recordtoggle", "ALT+F8", ShortcutType.Window )]
+	// RoP: F6, and Application scope rather than Window — recording is nearly always armed from the
+	// ejected game view, where focus sits on the scene viewport and a window-scoped shortcut never fires.
+	[Shortcut( "timeline.recordtoggle", "F6", ShortcutType.Application )]
 	public void RecordToggle()
 	{
 		if ( Session is null )

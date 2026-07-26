@@ -211,6 +211,14 @@ internal static class TopLevelTools
 
 		return builder.ToString();
 	}
+	[McpTool( "clear_console" ), McpListed]
+	[Description( "Drop every buffered console entry so the next read_console starts clean. Use before driving an action you want to read the fresh output of." )]
+	public static object ClearConsole()
+	{
+		var cleared = LogBuffer.Clear();
+
+		return $"Cleared {cleared} buffered console entries.";
+	}
 }
 
 /// <summary>

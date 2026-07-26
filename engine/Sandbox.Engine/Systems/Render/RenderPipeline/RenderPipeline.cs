@@ -31,6 +31,9 @@ internal partial class RenderPipeline
 
 	internal void AddLayersToView( ISceneView view, RenderViewport viewport, SceneViewRenderTargetHandle rtColor, SceneViewRenderTargetHandle rtDepth, RenderMultisampleType nMSAA, CRenderAttributes pipelineAttrs, RenderViewport screenSize )
 	{
+		if ( viewport.Rect.Width <= 0 || viewport.Rect.Height <= 0 || screenSize.Rect.Width <= 0 || screenSize.Rect.Height <= 0 )
+			return;
+
 		var msaa = nMSAA.FromEngine();
 		var pipelineAttributes = new RenderAttributes( pipelineAttrs );
 
